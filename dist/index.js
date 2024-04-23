@@ -32584,7 +32584,7 @@ async function run() {
         content: Buffer.from(
           `${newVersion.major}.${newVersion.minor}`
         ).toString('base64'),
-        sha: getContentResponse.data?.sha ?? undefined
+        sha: getContentResponse?.data.sha ?? undefined
       })
 
       if (newComment.status !== 200 && newComment.status !== 201) {
@@ -32630,7 +32630,7 @@ async function run() {
     core.debug(JSON.stringify(createTagResponse))
 
     const newTagReference = `refs/tags/${newTagName}`
-    const createReferenceResponse = await octokit.rest.git.createRef({
+    await octokit.rest.git.createRef({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       ref: newTagReference,
