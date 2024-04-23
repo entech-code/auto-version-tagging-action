@@ -32482,9 +32482,11 @@ async function run() {
   try {
     const myToken = core.getInput('token', { required: true })
     const major = core.getInput('majorVersion', { required: true })
-    const tagPrefix = core.getInput('tagPrefix') ?? 'v'
+    const tagPrefix = core.getInput('tagPrefix') === '' ?? 'v'
 
     const octokit = github.getOctokit(myToken)
+    core.info(`Tag prefix: ${tagPrefix}`)
+
     core.info(`Context ref: ${github.context.ref}`)
 
     const tags = await octokit.rest.repos.listTags({
@@ -32497,7 +32499,11 @@ async function run() {
     }
 
     const versions = tags.data
-      .filter(x => semver.valid(x.name.substring(tagPrefix.length)))
+      .filter(
+        x =>
+          x.name.startsWith(tagPrefix) &&
+          semver.valid(x.name.substring(tagPrefix.length))
+      )
       .map(x => semver.parse(x.name.substring(tagPrefix.length)))
 
     for (const tag of tags.data) {
@@ -32510,7 +32516,7 @@ async function run() {
       github.context.ref === 'refs/heads/master' ||
       github.context.ref === 'refs/heads/main'
     ) {
-      core.info(`The branch is master or main, increment major version`)
+      core.info(`The branch is master or main, increment minor version`)
       const minor = Math.max(-1, ...versions.map(x => x.minor))
       newVersion = new semver.SemVer(`${major}.${minor + 1}.0`)
     } else if (github.context.ref.startsWith('refs/heads/patch/')) {
