@@ -26,19 +26,33 @@ async function run() {
       ref: github.context.ref
     })
 
-    core.info(`Content response: ${JSON.stringify(getContentResponse)}`)
-    const content = Buffer.from(
-      getContentResponse.data.content,
-      'base64'
-    ).toString('utf8')
+    if (
+      getContentResponse.status !== 404 &&
+      getContentResponse.status !== 200
+    ) {
+      throw Error('Failed to get content')
+    }
 
-    core.info(`File content: ${content}`)
+    let fileVersion = null
+    if (getContentResponse.status === 404) {
+      core.info('File not found')
+      fileVersion = new semver.SemVer('0.0.0')
+    } else {
+      const content = Buffer.from(
+        getContentResponse.data.content,
+        'base64'
+      ).toString('utf8')
+      core.info(`File content: ${content}`)
 
-    const fileVersion = semver.parse(content)
+      if (!semver.valid(content)) {
+        throw Error(
+          `Invalid version file content: ${content}. Expected N.N format`
+        )
+      }
+      fileVersion = semver.parse(content)
+    }
+
     // Set the output value
-
-    octokit.rest.git.createBlob()
-
     let page = 1
     let tags = []
     let response = null
@@ -75,6 +89,7 @@ async function run() {
 
     let newVersion = undefined
 
+    let shaForTag = github.context.sha
     if (
       github.context.ref === 'refs/heads/master' ||
       github.context.ref === 'refs/heads/main'
@@ -82,6 +97,26 @@ async function run() {
       core.info(`The branch is master or main, increment minor version`)
       const minor = Math.max(-1, ...versions.map(x => x.minor))
       newVersion = new semver.SemVer(`${major}.${minor + 1}.0`)
+
+      core.info(
+        `Update version file to ${newVersion.major}.${newVersion.minor}`
+      )
+      const newComment = await octokit.rest.repos.createOrUpdateFileContents({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        path,
+        message: `Update version to ${newVersion.major}.${newVersion.minor}`,
+        content: Buffer.from(
+          `${newVersion.major}.${newVersion.minor}`
+        ).toString('base64'),
+        sha: getContentResponse.data?.sha ?? undefined
+      })
+
+      if (newComment.status !== 200 && newComment.status !== 201) {
+        throw Error('Failed to update version file')
+      }
+
+      shaForTag = newComment.data.commit.sha
     } else if (github.context.ref.startsWith('refs/heads/patch/')) {
       core.info(`The branch is patch, increment patch version`)
       const minor = Math.max(0, ...versions.map(x => x.patch))
@@ -114,7 +149,7 @@ async function run() {
       tag: newTagName,
       type: 'commit',
       message: `New tag ${newTagName} is created`,
-      object: github.context.sha
+      object: shaForTag
     })
 
     core.debug(JSON.stringify(createTagResponse))
@@ -127,32 +162,13 @@ async function run() {
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       ref: newTagReference,
-      sha: github.context.sha
+      sha: shaForTag
     })
     if (createReferenceResponse.status !== 201) {
       throw Error(`Failed to create reference ${newTagReference}`)
     }
 
     core.info(`Tag created: ${newTagName}`)
-
-    if (
-      fileVersion.major !== newVersion.major ||
-      fileVersion.minor !== newVersion.minor
-    ) {
-      core.info(
-        `Update version file to ${newVersion.major}.${newVersion.minor}`
-      )
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        path,
-        message: `Update version to ${newVersion.major}.${newVersion.minor}`,
-        content: Buffer.from(
-          `${newVersion.major}.${newVersion.minor}`
-        ).toString('base64'),
-        sha: response.data.sha
-      })
-    }
 
     core.setOutput('version', newVersion.version)
     core.setOutput('tag', newTagName)
