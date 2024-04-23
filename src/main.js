@@ -10,7 +10,7 @@ async function run() {
   try {
     const myToken = core.getInput('token')
     const major = core.getInput('majorVersion')
-    const tagPrefix = core.getInput('tagPrefix') === '' ?? 'v'
+    const tagPrefix = core.getInput('tagPrefix')
 
     const octokit = github.getOctokit(myToken)
     core.info(`Tag prefix: ${tagPrefix}`)
@@ -78,6 +78,7 @@ async function run() {
       repo: github.context.repo.repo,
       tag: newTagName,
       type: 'commit',
+      message: `New version is created`,
       object: github.context.sha
     })
 
