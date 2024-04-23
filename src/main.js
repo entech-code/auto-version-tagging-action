@@ -24,6 +24,17 @@ async function run() {
       ref: '*'
     })
 
+    const tags = await octokit.rest.repos.listTags({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo
+    })
+
+    for (const tag of tags.data) {
+      core.info(tag.name)
+    }
+
+    core.info(JSON.stringify(refs))
+
     for (const ref of refs.data) {
       core.info(ref.ref)
     }
