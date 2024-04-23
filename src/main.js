@@ -44,7 +44,7 @@ async function run() {
       ).toString('utf8')
       core.info(`File content: ${content}`)
 
-      if (!semver.valid(`${content}.0`)) {
+      if (!semver.valid(`${content}.0`.trim())) {
         throw Error(
           `Invalid version file content: ${content}. Expected format: N.N`
         )
