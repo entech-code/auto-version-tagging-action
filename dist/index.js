@@ -32491,12 +32491,23 @@ async function run() {
 
     const path = '.version'
 
-    const getContentResponse = await octokit.rest.repos.getContent({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      path,
-      ref: github.context.ref
-    })
+    let getContentResponse = null
+    try {
+      getContentResponse = await octokit.rest.repos.getContent({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        path,
+        ref: github.context.ref
+      })
+    } catch (error) {
+      core.info(JSON.stringify(error))
+      if (error.status === 404) {
+        core.info('File not found')
+        fileVersion = new semver.SemVer('0.0.0')
+      } else {
+        throw error
+      }
+    }
 
     if (
       getContentResponse.status !== 404 &&
