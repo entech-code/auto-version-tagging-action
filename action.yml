@@ -4,15 +4,25 @@ author: 'Your name or organization here'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
+  token:
+    description: >
+      Personal access token (PAT) used to manage tags of the repository.
+    default: ${{ github.token }}
+  majorVersion:
+    description:
+      'The major version of the release. The scripts changes only minor and
+      patch versions.'
+    default: '1'
+  tagPrefix:
+    description: 'The prefix of the tag to be created.'
+    default: 'v'
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  version:
+    description: 'New version number'
+  tag:
+    description: 'Newly created tag'
 
 runs:
   using: node20

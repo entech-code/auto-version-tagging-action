@@ -32480,8 +32480,8 @@ const semver = __nccwpck_require__(1383)
  */
 async function run() {
   try {
-    const myToken = core.getInput('token', { required: true })
-    const major = core.getInput('majorVersion', { required: true })
+    const myToken = core.getInput('token')
+    const major = core.getInput('majorVersion')
     const tagPrefix = core.getInput('tagPrefix') === '' ?? 'v'
 
     const octokit = github.getOctokit(myToken)
@@ -32558,6 +32558,7 @@ async function run() {
     }
 
     core.setOutput('version', newVersion.version)
+    core.setOutput('tag', newTagName)
   } catch (error) {
     // Fail the workflow run if an error occurs
     core.setFailed(error.message)
