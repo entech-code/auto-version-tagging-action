@@ -56,11 +56,11 @@ export async function fetchFileContentIfExists(octokit, filePath) {
   return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
 
-export async function createTag(octokit, owner, repo, newTagName, shaForTag) {
+export async function createTag(octokit, newTagName, shaForTag) {
   core.info(`Create a new tag: ${newTagName}`)
   await octokit.rest.git.createTag({
-    owner,
-    repo,
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
     tag: newTagName,
     type: 'commit',
     message: `New tag ${newTagName} is created`,
@@ -68,9 +68,10 @@ export async function createTag(octokit, owner, repo, newTagName, shaForTag) {
   })
 
   const newTagReference = `refs/tags/${newTagName}`
+  core.info(`Create a new tag ref: ${newTagReference}`)
   await octokit.rest.git.createRef({
-    owner,
-    repo,
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
     ref: newTagReference,
     sha: shaForTag
   })

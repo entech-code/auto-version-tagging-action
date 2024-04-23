@@ -53,10 +53,7 @@ async function run() {
 
     const newTagName = await createTag(
       octokit,
-      github.context.repo.owner,
-      github.context.repo.repo,
       `${tagPrefix}${newVersion.version}`,
-      tagPrefix,
       codeSha
     )
 
