@@ -8,13 +8,15 @@ const github = require('@actions/github')
  */
 async function run() {
   try {
-    const myToken = core.getInput('myToken')
+    const myToken = core.getInput('myToken', { required: true })
     const ms = core.getInput('milliseconds', { required: true })
 
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
     core.info(`Waiting ${ms} milliseconds ...`)
 
     const octokit = github.getOctokit(myToken)
+    core.info(github.context.repo.owner)
+    core.info(github.context.repo.repo)
 
     const refs = await octokit.rest.git.listMatchingRefs(
       github.context.repo.owner,
@@ -22,17 +24,9 @@ async function run() {
       '*'
     )
 
-    console.log(`Hello!`)
-
     for (const ref of refs.data) {
       core.info(ref.ref)
-      github.info(ref.ref)
-      console.log(ref.ref)
     }
-
-    github.info(new Date().toTimeString())
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
 
     await wait(parseInt(ms, 10))
     core.debug(new Date().toTimeString())
