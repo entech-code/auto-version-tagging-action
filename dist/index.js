@@ -32528,7 +32528,7 @@ async function fetchFileContentIfExists(octokit, filePath) {
   ).toString('utf8')
 
   core.info(`File ${filePath} content: ${content}`)
-  return [content, getContentResponse.data.data]
+  return { fileContent, fileSha: getContentResponse.data.sha }
 }
 
 async function createTag(octokit, owner, repo, newTagName, shaForTag) {
@@ -32692,14 +32692,14 @@ async function run() {
 
     const versionFilePath = '.version'
 
-    const [versionFileContent, versionFileSha] = fetchFileContentIfExists(
+    const { fileContent, fileSha } = fetchFileContentIfExists(
       octokit,
       versionFilePath
     )
 
     let fileVersion = new semver.SemVer('0.0.0')
-    if (versionFileContent) {
-      const content = versionFileContent.trim().trim('\r').trim('\n').trim()
+    if (fileContent) {
+      const content = fileContent.trim().trim('\r').trim('\n').trim()
       if (!semver.valid(`${content}.0`)) {
         throw Error(
           `Invalid version file content: ${content}. Expected format: N.N`
@@ -32714,7 +32714,7 @@ async function run() {
       octokit,
       newVersion,
       versionFilePath,
-      versionFileSha
+      fileSha
     )
 
     const newTagName = await createTag(

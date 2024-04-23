@@ -24,14 +24,14 @@ async function run() {
 
     const versionFilePath = '.version'
 
-    const [versionFileContent, versionFileSha] = fetchFileContentIfExists(
+    const { fileContent, fileSha } = fetchFileContentIfExists(
       octokit,
       versionFilePath
     )
 
     let fileVersion = new semver.SemVer('0.0.0')
-    if (versionFileContent) {
-      const content = versionFileContent.trim().trim('\r').trim('\n').trim()
+    if (fileContent) {
+      const content = fileContent.trim().trim('\r').trim('\n').trim()
       if (!semver.valid(`${content}.0`)) {
         throw Error(
           `Invalid version file content: ${content}. Expected format: N.N`
@@ -46,7 +46,7 @@ async function run() {
       octokit,
       newVersion,
       versionFilePath,
-      versionFileSha
+      fileSha
     )
 
     const newTagName = await createTag(
