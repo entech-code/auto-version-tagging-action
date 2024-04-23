@@ -22,7 +22,8 @@ async function run() {
     const getContentResponse = await octokit.rest.repos.getContent({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
-      path
+      path,
+      ref: github.context.ref
     })
 
     core.info(`Content response: ${JSON.stringify(getContentResponse)}`)
