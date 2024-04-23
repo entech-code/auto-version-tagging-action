@@ -86,10 +86,6 @@ async function run() {
       )
       .map(x => semver.parse(x.name.substring(tagPrefix.length)))
 
-    for (const version of versions) {
-      core.info(version.name)
-    }
-
     let newVersion = undefined
 
     let shaForTag = github.context.sha
