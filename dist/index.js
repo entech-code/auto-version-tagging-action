@@ -32511,7 +32511,7 @@ async function run() {
       page++
     } while (response.data.length > 0)
 
-    const versions = tags.data
+    const versions = tags
       .filter(
         x =>
           x.name.startsWith(tagPrefix) &&
@@ -32519,8 +32519,8 @@ async function run() {
       )
       .map(x => semver.parse(x.name.substring(tagPrefix.length)))
 
-    for (const tag of tags.data) {
-      core.info(tag.name)
+    for (const version of versions) {
+      core.info(version.name)
     }
 
     let newVersion = undefined
