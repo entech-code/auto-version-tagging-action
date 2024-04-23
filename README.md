@@ -3,28 +3,37 @@
 [![GitHub Super-Linter](https://github.com/actions/javascript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
 ![CI](https://github.com/actions/javascript-action/actions/workflows/ci.yml/badge.svg)
 
-Automatically increment and tag your GitHub repository versions with this shared GitHub Action. It simplifies the process of version management, especially for projects following semantic versioning. The action reads a version file in your repository, increments it based on the input, and tags the repository with a new version tag, following a custom or default prefix.
+Automatically increment and tag your GitHub repository versions with this shared
+GitHub Action. It simplifies the process of version management, especially for
+projects following semantic versioning. The action reads a version file in your
+repository, increments it based on the input, and tags the repository with a new
+version tag, following a custom or default prefix.
 
 ## Features
 
 - Fetches and increments project version based on the current latest version.
 - Supports semantic versioning.
-- Allows custom tag prefixes to suit different project environments or versioning schemes.
+- Allows custom tag prefixes to suit different project environments or
+  versioning schemes.
 - Automatically updates a version file in your repository with the new version.
 - Creates a new tag in the repository for the new version.
 
 ## Usage
 
-To use the Auto Version Tagging Action in your GitHub Actions workflow, follow these steps:
+To use the Auto Version Tagging Action in your GitHub Actions workflow, follow
+these steps:
 
 1. **Set up the Workflow File**
 
-   - Create a `.github/workflows` directory in your repository if it doesn't exist.
-   - Add a new YAML file for your workflow (e.g., `.github/workflows/versioning.yml`).
+   - Create a `.github/workflows` directory in your repository if it doesn't
+     exist.
+   - Add a new YAML file for your workflow (e.g.,
+     `.github/workflows/versioning.yml`).
 
 2. **Configure the Workflow**
 
-   Add the following content to your workflow file, customizing the inputs (`token`, `majorVersion`, and `tagPrefix`) as needed:
+   Add the following content to your workflow file, customizing the inputs
+   (`token`, `majorVersion`, and `tagPrefix`) as needed:
 
    ```yaml
    name: Auto Version Tagging
@@ -38,14 +47,14 @@ To use the Auto Version Tagging Action in your GitHub Actions workflow, follow t
      tag-version:
        runs-on: ubuntu-latest
        steps:
-       - uses: actions/checkout@v2
+         - uses: actions/checkout@v2
 
-       - name: Increment and Tag Version
-         uses: entech-code/auto-version-tagging-action@v1
-         with:
-           token: ${{ secrets.GITHUB_TOKEN }}
-           majorVersion: 1 # Set your major version
-           tagPrefix: 'v' # Customize your tag prefix for version
+         - name: Increment and Tag Version
+           uses: entech-code/auto-version-tagging-action@v1
+           with:
+             token: ${{ secrets.GITHUB_TOKEN }}
+             majorVersion: 1 # Set your major version
+             tagPrefix: 'v' # Customize your tag prefix for version
    ```
 
 3. **Inputs**
@@ -53,8 +62,10 @@ To use the Auto Version Tagging Action in your GitHub Actions workflow, follow t
    The action accepts the following inputs:
 
    - `token` (**required**): Your GitHub token for authentication.
-   - `majorVersion`: The major version of the release. The scripts changes only minor and patch versions.
-   - `tagPrefix`: A prefix for tags (e.g., `v` for version tags like `v1.0.0`). Defaults to an `v`.
+   - `majorVersion`: The major version of the release. The scripts changes only
+     minor and patch versions.
+   - `tagPrefix`: A prefix for tags (e.g., `v` for version tags like `v1.0.0`).
+     Defaults to an `v`.
 
 4. **Outputs**
 
@@ -62,7 +73,6 @@ To use the Auto Version Tagging Action in your GitHub Actions workflow, follow t
 
    - `version`: The new version number.
    - `tag`: The full tag name created by the action.
-
 
 ## Initial Setup
 

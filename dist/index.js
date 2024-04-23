@@ -32467,12 +32467,214 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 1319:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "fetchAllTags": () => (/* binding */ fetchAllTags),
+/* harmony export */   "fetchFileContentIfExists": () => (/* binding */ fetchFileContentIfExists)
+/* harmony export */ });
+const core = __nccwpck_require__(2186)
+const github = __nccwpck_require__(5438)
+
+async function fetchAllTags(octokit, owner, repo) {
+  let page = 1
+  let tags = []
+  let response = null
+  do {
+    response = await octokit.rest.repos.listTags({
+      owner,
+      repo,
+      per_page: 100,
+      page
+    })
+    if (response.status !== 200) {
+      throw Error('Failed to get tags')
+    }
+
+    if (response.data.length === 0) {
+      break
+    }
+
+    tags = tags.concat(response.data)
+    page++
+  } while (response.data.length > 0)
+
+  return tags
+}
+
+async function fetchFileContentIfExists(octokit, filePath) {
+  let getContentResponse = null
+  try {
+    getContentResponse = await octokit.rest.repos.getContent({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      ref: github.context.ref,
+      path: filePath
+    })
+  } catch (error) {
+    core.info(JSON.stringify(error))
+    if (error.status === 404) {
+      return [null, null]
+    } else {
+      throw error
+    }
+  }
+  const content = Buffer.from(
+    getContentResponse.data.content,
+    'base64'
+  ).toString('utf8')
+
+  core.info(`File ${filePath} content: ${content}`)
+  return [content, getContentResponse.data.data]
+}
+
+async function createTag(octokit, owner, repo, newTagName, shaForTag) {
+  core.info(`Create a new tag: ${newTagName}`)
+  await octokit.rest.git.createTag({
+    owner,
+    repo,
+    tag: newTagName,
+    type: 'commit',
+    message: `New tag ${newTagName} is created`,
+    object: shaForTag
+  })
+
+  const newTagReference = `refs/tags/${newTagName}`
+  await octokit.rest.git.createRef({
+    owner,
+    repo,
+    ref: newTagReference,
+    sha: shaForTag
+  })
+
+  core.info(`Tag created: ${newTagName}`)
+
+  return newTagName
+}
+
+
+/***/ }),
+
+/***/ 8505:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "getVersions": () => (/* binding */ getVersions),
+/* harmony export */   "incrementVersion": () => (/* binding */ incrementVersion),
+/* harmony export */   "isMainBranch": () => (/* binding */ isMainBranch),
+/* harmony export */   "isPatchBranch": () => (/* binding */ isPatchBranch),
+/* harmony export */   "updateVersionFile": () => (/* binding */ updateVersionFile)
+/* harmony export */ });
+const { fetchAllTags } = __nccwpck_require__(1319)
+const semver = __nccwpck_require__(1383)
+const github = __nccwpck_require__(5438)
+const core = __nccwpck_require__(2186)
+
+async function getVersions(octokit, tagPrefix) {
+  const tags = await fetchAllTags(
+    octokit,
+    github.context.repo.owner,
+    github.context.repo.repo
+  )
+
+  const versions = tags
+    .filter(
+      x =>
+        x.name.startsWith(tagPrefix) &&
+        semver.valid(x.name.substring(tagPrefix.length))
+    )
+    .map(x => semver.parse(x.name.substring(tagPrefix.length)))
+  return versions
+}
+
+function isMainBranch() {
+  return (
+    github.context.ref === 'refs/heads/master' ||
+    github.context.ref === 'refs/heads/main'
+  )
+}
+
+function isPatchBranch() {
+  return github.context.ref.startsWith('refs/heads/patch/')
+}
+
+function incrementVersion(major, allVersions, codeVersion) {
+  if (isMainBranch()) {
+    core.info(`The branch is master or main, increment minor version`)
+    const minor = Math.max(-1, ...allVersions.map(x => x.minor))
+    return new semver.SemVer(`${major}.${minor + 1}.0`)
+  }
+
+  if (isPatchBranch()) {
+    core.info(`The branch is patch, increment patch version`)
+    const minor = codeVersion.minor
+    const build = Math.max(
+      -1,
+      ...allVersions
+        .filter(x => x.patch < 20000 && x.minor === minor)
+        .map(x => x.patch)
+    )
+    return new semver.SemVer(`${major}.${minor}.${build + 1}`)
+  }
+
+  core.info(
+    `The branch is feature, increment patch version starting from 20000`
+  )
+  const minor = codeVersion.minor
+  const build = Math.max(
+    19999,
+    ...allVersions
+      .filter(x => x.patch >= 20000 && x.minor === minor)
+      .map(x => x.patch)
+  )
+  return new semver.SemVer(`${major}.${minor}.${build + 1}`)
+}
+
+async function updateVersionFile(
+  octokit,
+  newVersion,
+  versionFilePath,
+  versionFileSha
+) {
+  let shaForTag = github.context.sha
+  if (isMainBranch()) {
+    core.info(`Update version file to ${newVersion.major}.${newVersion.minor}`)
+    const newComment = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path: versionFilePath,
+      message: `Update version to ${newVersion.major}.${newVersion.minor}`,
+      content: Buffer.from(`${newVersion.major}.${newVersion.minor}`).toString(
+        'base64'
+      ),
+      sha: versionFileSha ?? undefined
+    })
+
+    shaForTag = newComment.data.commit.sha
+  }
+  return shaForTag
+}
+
+
+/***/ }),
+
 /***/ 1713:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const semver = __nccwpck_require__(1383)
+const { fetchFileContentIfExists, createTag } = __nccwpck_require__(1319)
+const {
+  getVersions,
+  incrementVersion,
+  updateVersionFile
+} = __nccwpck_require__(8505)
 
 /**
  * The main function for the action.
@@ -32486,39 +32688,18 @@ async function run() {
 
     const octokit = github.getOctokit(myToken)
     core.info(`Tag prefix: ${tagPrefix}`)
-
     core.info(`Context ref: ${github.context.ref}`)
 
-    const path = '.version'
+    const versionFilePath = '.version'
 
-    let getContentResponse = null
-    let fileVersion = null
-    try {
-      getContentResponse = await octokit.rest.repos.getContent({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        path,
-        ref: github.context.ref
-      })
-    } catch (error) {
-      core.info(JSON.stringify(error))
-      if (error.status === 404) {
-        core.info('File not found')
-        fileVersion = new semver.SemVer('0.0.0')
-      } else {
-        throw error
-      }
-    }
+    const [versionFileContent, versionFileSha] = fetchFileContentIfExists(
+      octokit,
+      versionFilePath
+    )
 
-    if (!fileVersion) {
-      const content = Buffer.from(getContentResponse.data.content, 'base64')
-        .toString('utf8')
-        .trim()
-        .trim('\r')
-        .trim('\n')
-        .trim()
-      core.info(`File content: ${content}`)
-
+    let fileVersion = new semver.SemVer('0.0.0')
+    if (versionFileContent) {
+      const content = versionFileContent.trim().trim('\r').trim('\n').trim()
       if (!semver.valid(`${content}.0`)) {
         throw Error(
           `Invalid version file content: ${content}. Expected format: N.N`
@@ -32527,113 +32708,23 @@ async function run() {
       fileVersion = semver.parse(`${content}.0`)
     }
 
-    // Set the output value
-    let page = 1
-    let tags = []
-    let response = null
-    do {
-      response = await octokit.rest.repos.listTags({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        per_page: 100,
-        page
-      })
-      if (response.status !== 200) {
-        throw Error('Failed to get tags')
-      }
+    const versions = await getVersions(octokit, tagPrefix)
+    const newVersion = incrementVersion(major, versions, fileVersion)
+    const codeSha = await updateVersionFile(
+      octokit,
+      newVersion,
+      versionFilePath,
+      versionFileSha
+    )
 
-      if (response.data.length === 0) {
-        break
-      }
-
-      tags = tags.concat(response.data)
-      page++
-    } while (response.data.length > 0)
-
-    const versions = tags
-      .filter(
-        x =>
-          x.name.startsWith(tagPrefix) &&
-          semver.valid(x.name.substring(tagPrefix.length))
-      )
-      .map(x => semver.parse(x.name.substring(tagPrefix.length)))
-
-    let newVersion = undefined
-
-    let shaForTag = github.context.sha
-    if (
-      github.context.ref === 'refs/heads/master' ||
-      github.context.ref === 'refs/heads/main'
-    ) {
-      core.info(`The branch is master or main, increment minor version`)
-      const minor = Math.max(-1, ...versions.map(x => x.minor))
-      newVersion = new semver.SemVer(`${major}.${minor + 1}.0`)
-
-      core.info(
-        `Update version file to ${newVersion.major}.${newVersion.minor}`
-      )
-      const newComment = await octokit.rest.repos.createOrUpdateFileContents({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        path,
-        message: `Update version to ${newVersion.major}.${newVersion.minor}`,
-        content: Buffer.from(
-          `${newVersion.major}.${newVersion.minor}`
-        ).toString('base64'),
-        sha: getContentResponse?.data.sha ?? undefined
-      })
-
-      if (newComment.status !== 200 && newComment.status !== 201) {
-        throw Error('Failed to update version file')
-      }
-
-      shaForTag = newComment.data.commit.sha
-    } else if (github.context.ref.startsWith('refs/heads/patch/')) {
-      core.info(`The branch is patch, increment patch version`)
-      const minor = fileVersion.minor
-      const build = Math.max(
-        -1,
-        ...versions
-          .filter(x => x.patch < 20000 && x.minor === minor)
-          .map(x => x.patch)
-      )
-      newVersion = new semver.SemVer(`${major}.${minor}.${build + 1}`)
-    } else {
-      core.info(
-        `The branch is feature, increment patch version starting from 20000`
-      )
-      const minor = fileVersion.minor
-      const build = Math.max(
-        19999,
-        ...versions
-          .filter(x => x.patch >= 20000 && x.minor === minor)
-          .map(x => newVersion.patch)
-      )
-      newVersion = new semver.SemVer(`${major}.${minor}.${build + 1}`)
-    }
-
-    const newTagName = `${tagPrefix}${newVersion.version}`
-    core.info(`Create a new tag: ${newTagName}`)
-    const createTagResponse = await octokit.rest.git.createTag({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      tag: newTagName,
-      type: 'commit',
-      message: `New tag ${newTagName} is created`,
-      object: shaForTag
-    })
-
-    core.debug(JSON.stringify(createTagResponse))
-
-    const newTagReference = `refs/tags/${newTagName}`
-    await octokit.rest.git.createRef({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      ref: newTagReference,
-      sha: shaForTag
-    })
-
-    core.info(`Tag created: ${newTagName}`)
+    const newTagName = await createTag(
+      octokit,
+      github.context.repo.owner,
+      github.context.repo.repo,
+      `${tagPrefix}${newVersion.version}`,
+      tagPrefix,
+      codeSha
+    )
 
     core.setOutput('version', newVersion.version)
     core.setOutput('tag', newTagName)
@@ -34532,6 +34623,34 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
