@@ -34,7 +34,10 @@ export function isPatchBranch() {
 export function incrementVersion(major, allVersions, codeVersion) {
   if (isMainBranch()) {
     core.info(`The branch is master or main, increment minor version`)
-    const minor = Math.max(-1, ...allVersions.map(x => x.minor))
+    const minor = Math.max(
+      -1,
+      ...allVersions.filter(x => x.major === major).map(x => x.minor)
+    )
     return new semver.SemVer(`${major}.${minor + 1}.0`)
   }
 
@@ -44,6 +47,7 @@ export function incrementVersion(major, allVersions, codeVersion) {
     const build = Math.max(
       -1,
       ...allVersions
+        .filter(x => x.major === major)
         .filter(x => x.patch < 20000 && x.minor === minor)
         .map(x => x.patch)
     )
@@ -57,6 +61,7 @@ export function incrementVersion(major, allVersions, codeVersion) {
   const build = Math.max(
     19999,
     ...allVersions
+      .filter(x => x.major === major)
       .filter(x => x.patch >= 20000 && x.minor === minor)
       .map(x => x.patch)
   )
