@@ -32567,7 +32567,7 @@ async function run() {
       object: github.context.sha
     })
 
-    core.debug(JSON.stringify(createTagResponse))
+    core.info(JSON.stringify(createTagResponse))
     if (createTagResponse.status !== 201) {
       throw Error(`Failed to create tag ${newTagName}`)
     }
