@@ -32567,10 +32567,22 @@ async function run() {
       object: github.context.sha
     })
 
-    core.info(JSON.stringify(createTagResponse))
+    core.debug(JSON.stringify(createTagResponse))
     if (createTagResponse.status !== 201) {
       throw Error(`Failed to create tag ${newTagName}`)
     }
+
+    const newTagReference = `refs/tags/${newTagName}`
+    const createReferenceResponse = await octokit.rest.git.createRef({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      ref: newTagReference,
+      sha: github.context.sha
+    })
+    if (createReferenceResponse.status !== 201) {
+      throw Error(`Failed to create reference ${newTagReference}`)
+    }
+
     core.info(`Tag created: ${newTagName}`)
 
     core.setOutput('version', newVersion.version)
