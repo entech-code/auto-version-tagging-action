@@ -32492,6 +32492,7 @@ async function run() {
     const path = '.version'
 
     let getContentResponse = null
+    let fileVersion = null
     try {
       getContentResponse = await octokit.rest.repos.getContent({
         owner: github.context.repo.owner,
@@ -32509,18 +32510,7 @@ async function run() {
       }
     }
 
-    if (
-      getContentResponse.status !== 404 &&
-      getContentResponse.status !== 200
-    ) {
-      throw Error('Failed to get content')
-    }
-
-    let fileVersion = null
-    if (getContentResponse.status === 404) {
-      core.info('File not found')
-      fileVersion = new semver.SemVer('0.0.0')
-    } else {
+    if (!fileVersion) {
       const content = Buffer.from(getContentResponse.data.content, 'base64')
         .toString('utf8')
         .trim()
@@ -32638,9 +32628,6 @@ async function run() {
     })
 
     core.debug(JSON.stringify(createTagResponse))
-    if (createTagResponse.status !== 201) {
-      throw Error(`Failed to create tag ${newTagName}`)
-    }
 
     const newTagReference = `refs/tags/${newTagName}`
     const createReferenceResponse = await octokit.rest.git.createRef({
@@ -32649,9 +32636,6 @@ async function run() {
       ref: newTagReference,
       sha: shaForTag
     })
-    if (createReferenceResponse.status !== 201) {
-      throw Error(`Failed to create reference ${newTagReference}`)
-    }
 
     core.info(`Tag created: ${newTagName}`)
 
