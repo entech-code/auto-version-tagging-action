@@ -1,6 +1,7 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Automated Versioning and Tagging'
+description:
+  'It is designed to automate versioning and tagging for your repository'
+author: 'Entech Solutions'
 
 # Define your inputs here.
 inputs:
@@ -20,7 +21,7 @@ inputs:
 # Define your outputs here.
 outputs:
   version:
-    description: 'New version number'
+    description: 'Newly defined version'
   tag:
     description: 'Newly created tag'
 
