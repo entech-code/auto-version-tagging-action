@@ -32471,7 +32471,6 @@ function wrappy (fn, cb) {
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const core = __nccwpck_require__(2186)
-const { wait } = __nccwpck_require__(1312)
 const github = __nccwpck_require__(5438)
 const semver = __nccwpck_require__(1383)
 
@@ -32481,24 +32480,26 @@ const semver = __nccwpck_require__(1383)
  */
 async function run() {
   try {
-    const myToken = core.getInput('myToken', { required: true })
-    const ms = core.getInput('milliseconds', { required: true })
-    const major = core.getInput('major', { required: true })
-
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.info(`Waiting ${ms} milliseconds ...`)
+    const myToken = core.getInput('token', { required: true })
+    const major = core.getInput('majorVersion', { required: true })
+    const tagPrefix = core.getInput('tagPrefix') ?? 'v'
 
     const octokit = github.getOctokit(myToken)
-    core.info(github.context.repo.owner)
-    core.info(github.context.repo.repo)
-    core.info(`ref: ${github.context.ref}`)
+    core.info(`Context ref: ${github.context.ref}`)
 
     const tags = await octokit.rest.repos.listTags({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo
     })
 
-    const versions = tags.data.map(x => semver.parse(x))
+    if (tags.status !== 200) {
+      throw Error('Failed to get tags')
+    }
+
+    const versions = tags.data
+      .filter(x => semver.valid(x.name.substring(tagPrefix.length)))
+      .map(x => semver.parse(x.name.substring(tagPrefix.length)))
+
     for (const tag of tags.data) {
       core.info(tag.name)
     }
@@ -32509,9 +32510,11 @@ async function run() {
       github.context.ref === 'refs/heads/master' ||
       github.context.ref === 'refs/heads/main'
     ) {
+      core.info(`The branch is master or main, increment major version`)
       const minor = Math.max(-1, ...versions.map(x => x.minor))
       newVersion = new semver.SemVer(`${major}.${minor + 1}.0`)
     } else if (github.context.ref.startsWith('refs/heads/patch/')) {
+      core.info(`The branch is patch, increment patch version`)
       const minor = Math.max(0, ...versions.map(x => x.patch))
       const build = Math.max(
         -1,
@@ -32521,6 +32524,9 @@ async function run() {
       )
       newVersion = new semver.SemVer(`${major}.${minor}.${build + 1}`)
     } else {
+      core.info(
+        `The branch is feature, increment patch version starting from 20000`
+      )
       const minor = Math.max(0, ...versions.map(x => x.minor))
       const build = Math.max(
         19999,
@@ -32531,15 +32537,21 @@ async function run() {
       newVersion = new semver.SemVer(`${major}.${minor}.${build + 1}`)
     }
 
-    // return version.version
-    // await wait(parseInt(ms, 10))
-    core.info(newVersion.version)
-    // core.debug(new Date().toTimeString())
+    const newTagName = `${tagPrefix}${newVersion.version}`
+    core.info(`Create a new tag: ${newTagName}`)
+    const createTagResponse = await octokit.rest.git.createTag({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      tag: newTagName,
+      type: 'commit',
+      object: github.context.sha
+    })
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('pastVersion', newVersion.version)
+    if (createTagResponse.status !== 201) {
+      throw Error(`Failed to create tag ${newTagName}`)
+    }
+
     core.setOutput('version', newVersion.version)
-    core.setOutput('time', new Date().toTimeString())
   } catch (error) {
     // Fail the workflow run if an error occurs
     core.setFailed(error.message)
@@ -32549,30 +32561,6 @@ async function run() {
 module.exports = {
   run
 }
-
-
-/***/ }),
-
-/***/ 1312:
-/***/ ((module) => {
-
-/**
- * Wait for a number of milliseconds.
- *
- * @param {number} milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-  return new Promise(resolve => {
-    if (isNaN(milliseconds)) {
-      throw new Error('milliseconds not a number')
-    }
-
-    setTimeout(() => resolve('done!'), milliseconds)
-  })
-}
-
-module.exports = { wait }
 
 
 /***/ }),
