@@ -32512,8 +32512,9 @@ async function run() {
     } else {
       const content = Buffer.from(getContentResponse.data.content, 'base64')
         .toString('utf8')
-        .trim('\n')
+        .trim()
         .trim('\r')
+        .trim('\n')
         .trim()
       core.info(`File content: ${content}`)
 
@@ -32592,7 +32593,7 @@ async function run() {
       shaForTag = newComment.data.commit.sha
     } else if (github.context.ref.startsWith('refs/heads/patch/')) {
       core.info(`The branch is patch, increment patch version`)
-      const minor = Math.max(0, ...versions.map(x => x.patch))
+      const minor = fileVersion.minor
       const build = Math.max(
         -1,
         ...versions
@@ -32604,7 +32605,7 @@ async function run() {
       core.info(
         `The branch is feature, increment patch version starting from 20000`
       )
-      const minor = Math.max(0, ...versions.map(x => x.minor))
+      const minor = fileVersion.minor
       const build = Math.max(
         19999,
         ...versions
