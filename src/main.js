@@ -8,12 +8,12 @@ const github = require('@actions/github')
  */
 async function run() {
   try {
+    const myToken = core.getInput('myToken')
     const ms = core.getInput('milliseconds', { required: true })
 
     // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
     core.info(`Waiting ${ms} milliseconds ...`)
 
-    const myToken = core.getInput('myToken')
     const octokit = github.getOctokit(myToken)
 
     const refs = await octokit.rest.git.listMatchingRefs(
