@@ -29211,11 +29211,11 @@ async function run() {
     core.info(github.context.repo.owner)
     core.info(github.context.repo.repo)
 
-    const refs = await octokit.rest.git.listMatchingRefs(
-      github.context.repo.owner,
-      github.context.repo.repo,
-      '*'
-    )
+    const refs = await octokit.rest.git.listMatchingRefs({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      ref: '*'
+    })
 
     for (const ref of refs.data) {
       core.info(ref.ref)
