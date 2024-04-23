@@ -29,6 +29,8 @@ async function run() {
       versionFilePath
     )
 
+    core.info(`File content: ${fileContent}, ${fileSha}`)
+
     let fileVersion = new semver.SemVer('0.0.0')
     if (fileContent) {
       const content = fileContent.trim().trim('\r').trim('\n').trim()

@@ -32528,7 +32528,9 @@ async function fetchFileContentIfExists(octokit, filePath) {
     'base64'
   ).toString('utf8')
 
-  core.info(`File ${filePath} content: ${content}`)
+  core.info(
+    `File ${filePath} (sha: ${getContentResponse.data.sha}) content: ${content}`
+  )
   core.info(JSON.stringify(getContentResponse))
   return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
@@ -32698,6 +32700,8 @@ async function run() {
       octokit,
       versionFilePath
     )
+
+    core.info(`File content: ${fileContent}, ${fileSha}`)
 
     let fileVersion = new semver.SemVer('0.0.0')
     if (fileContent) {
