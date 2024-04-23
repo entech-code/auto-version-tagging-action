@@ -32516,12 +32516,12 @@ async function run() {
       ).toString('utf8')
       core.info(`File content: ${content}`)
 
-      if (!semver.valid(content)) {
+      if (!semver.valid(`${content}.0`)) {
         throw Error(
-          `Invalid version file content: ${content}. Expected N.N format`
+          `Invalid version file content: ${content}. Expected format: N.N`
         )
       }
-      fileVersion = semver.parse(content)
+      fileVersion = semver.parse(`${content}.0`)
     }
 
     // Set the output value
