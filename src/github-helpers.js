@@ -50,10 +50,10 @@ export async function fetchFileContentIfExists(octokit, filePath) {
   ).toString('utf8')
 
   core.info(`File ${filePath} content: ${content}`)
-  return { fileContent, fileSha: getContentResponse.data.sha }
+  return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
 
-async function createTag(octokit, owner, repo, newTagName, shaForTag) {
+export async function createTag(octokit, owner, repo, newTagName, shaForTag) {
   core.info(`Create a new tag: ${newTagName}`)
   await octokit.rest.git.createTag({
     owner,

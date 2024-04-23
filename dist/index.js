@@ -32473,6 +32473,7 @@ function wrappy (fn, cb) {
 "use strict";
 __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "createTag": () => (/* binding */ createTag),
 /* harmony export */   "fetchAllTags": () => (/* binding */ fetchAllTags),
 /* harmony export */   "fetchFileContentIfExists": () => (/* binding */ fetchFileContentIfExists)
 /* harmony export */ });
@@ -32528,7 +32529,7 @@ async function fetchFileContentIfExists(octokit, filePath) {
   ).toString('utf8')
 
   core.info(`File ${filePath} content: ${content}`)
-  return { fileContent, fileSha: getContentResponse.data.sha }
+  return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
 
 async function createTag(octokit, owner, repo, newTagName, shaForTag) {
