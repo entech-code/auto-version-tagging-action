@@ -32529,6 +32529,7 @@ async function fetchFileContentIfExists(octokit, filePath) {
   ).toString('utf8')
 
   core.info(`File ${filePath} content: ${content}`)
+  core.info(JSON.stringify(getContentResponse))
   return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
 
