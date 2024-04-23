@@ -19,14 +19,18 @@ async function run() {
     const refs = await octokit.rest.git.listMatchingRefs(
       github.context.repo.owner,
       github.context.repo.repo,
-      'refs/tags/*'
+      '*'
     )
+
+    console.log(`Hello!`)
 
     for (const ref of refs.data) {
       core.info(ref.ref)
       github.info(ref.ref)
+      console.log(ref.ref)
     }
 
+    github.info(new Date().toTimeString())
     // Log the current timestamp, wait, then log the new timestamp
     core.debug(new Date().toTimeString())
 
