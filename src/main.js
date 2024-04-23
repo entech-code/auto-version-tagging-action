@@ -17,14 +17,27 @@ async function run() {
 
     core.info(`Context ref: ${github.context.ref}`)
 
-    const tags = await octokit.rest.repos.listTags({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo
-    })
+    let page = 1
+    let tags = []
+    let response = null
+    do {
+      response = await octokit.rest.repos.listTags({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        per_page: 100,
+        page
+      })
+      if (response.status !== 200) {
+        throw Error('Failed to get tags')
+      }
 
-    if (tags.status !== 200) {
-      throw Error('Failed to get tags')
-    }
+      if (response.data.length === 0) {
+        break
+      }
+
+      tags = tags.concat(response.data)
+      page++
+    } while (response.data.length > 0)
 
     const versions = tags.data
       .filter(
@@ -78,13 +91,15 @@ async function run() {
       repo: github.context.repo.repo,
       tag: newTagName,
       type: 'commit',
-      message: `New version is created`,
+      message: `New tag ${newTagName} is created`,
       object: github.context.sha
     })
 
+    core.debug(JSON.stringify(createTagResponse))
     if (createTagResponse.status !== 201) {
       throw Error(`Failed to create tag ${newTagName}`)
     }
+    core.info(`Tag created: ${newTagName}`)
 
     core.setOutput('version', newVersion.version)
     core.setOutput('tag', newTagName)
