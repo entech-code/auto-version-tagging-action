@@ -32489,6 +32489,25 @@ async function run() {
 
     core.info(`Context ref: ${github.context.ref}`)
 
+    const path = './.version'
+
+    const getContentResponse = await octokit.rest.repos.getContent({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path
+    })
+    core.info(`File content: ${response.data.content}`)
+
+    const content = Buffer.from(
+      getContentResponse.data.content,
+      'base64'
+    ).toString('utf8')
+
+    const fileVersion = semver.parse(content)
+    // Set the output value
+
+    octokit.rest.git.createBlob()
+
     let page = 1
     let tags = []
     let response = null
@@ -32584,6 +32603,25 @@ async function run() {
     }
 
     core.info(`Tag created: ${newTagName}`)
+
+    if (
+      fileVersion.major !== newVersion.major ||
+      fileVersion.minor !== newVersion.minor
+    ) {
+      core.info(
+        `Update version file to ${newVersion.major}.${newVersion.minor}`
+      )
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        path,
+        message: `Update version to ${newVersion.major}.${newVersion.minor}`,
+        content: Buffer.from(
+          `${newVersion.major}.${newVersion.minor}`
+        ).toString('base64'),
+        sha: response.data.sha
+      })
+    }
 
     core.setOutput('version', newVersion.version)
     core.setOutput('tag', newTagName)
