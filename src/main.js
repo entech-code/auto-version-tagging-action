@@ -24,7 +24,7 @@ async function run() {
 
     const versionFilePath = '.version'
 
-    const { fileContent, fileSha } = fetchFileContentIfExists(
+    const { fileContent, fileSha } = await fetchFileContentIfExists(
       octokit,
       versionFilePath
     )
