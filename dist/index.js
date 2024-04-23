@@ -32518,7 +32518,7 @@ async function fetchFileContentIfExists(octokit, filePath) {
   } catch (error) {
     core.info(JSON.stringify(error))
     if (error.status === 404) {
-      return [null, null]
+      return { fileContent: null, fileSha: null }
     } else {
       throw error
     }
