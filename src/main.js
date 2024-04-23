@@ -38,13 +38,14 @@ async function run() {
       core.info('File not found')
       fileVersion = new semver.SemVer('0.0.0')
     } else {
-      const content = Buffer.from(
-        getContentResponse.data.content,
-        'base64'
-      ).toString('utf8')
+      const content = Buffer.from(getContentResponse.data.content, 'base64')
+        .toString('utf8')
+        .trim('\n')
+        .trim('\r')
+        .trim()
       core.info(`File content: ${content}`)
 
-      if (!semver.valid(`${content}.0`.trim())) {
+      if (!semver.valid(`${content}.0`)) {
         throw Error(
           `Invalid version file content: ${content}. Expected format: N.N`
         )
