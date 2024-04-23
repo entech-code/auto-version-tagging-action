@@ -52,7 +52,6 @@ export async function fetchFileContentIfExists(octokit, filePath) {
   core.info(
     `File ${filePath} (sha: ${getContentResponse.data.sha}) content: ${content}`
   )
-  core.info(JSON.stringify(getContentResponse))
   return { fileContent: content, fileSha: getContentResponse.data.sha }
 }
 
