@@ -59,6 +59,7 @@ jobs:
         with:
           milliseconds: 1000
           myToken: ${{secrets.GITHUB_TOKEN}}
+          major: 1
 
       - name: Print Output
         id: output
