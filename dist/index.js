@@ -32579,6 +32579,7 @@ async function getBranchName(octokit) {
   }
 
   const branchName = ref.substring('refs/heads/'.length)
+  core.info(`Branch name: ${branchName}`)
   return branchName
 }
 
