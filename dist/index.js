@@ -32475,7 +32475,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
 /* harmony export */   "createTag": () => (/* binding */ createTag),
 /* harmony export */   "fetchAllTags": () => (/* binding */ fetchAllTags),
-/* harmony export */   "fetchFileContentIfExists": () => (/* binding */ fetchFileContentIfExists)
+/* harmony export */   "fetchFileContentIfExists": () => (/* binding */ fetchFileContentIfExists),
+/* harmony export */   "getBranchName": () => (/* binding */ getBranchName)
 /* harmony export */ });
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
@@ -32559,6 +32560,28 @@ async function createTag(octokit, newTagName, shaForTag) {
   return newTagName
 }
 
+async function getBranchName(octokit) {
+  let ref = github.context.ref
+  if (!ref.startsWith('refs/pulls/')) {
+    core.info(`ref is a pull request. Loading pull request`)
+    const pullNumber = github.context.ref.split('/')[2]
+    const pull = await octokit.rest.pulls.get({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      pull_number: pullNumber
+    })
+    ref = pull.data.head.ref
+    core.info(`source branch ref in the pull request: ${ref}`)
+  }
+
+  if (!ref.startsWith('refs/heads/')) {
+    throw Error('This action only works on branches')
+  }
+
+  const branchName = ref.substring('refs/heads/'.length)
+  return branchName
+}
+
 
 /***/ }),
 
@@ -32573,7 +32596,7 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "isMainBranch": () => (/* binding */ isMainBranch),
 /* harmony export */   "isPatchBranch": () => (/* binding */ isPatchBranch),
 /* harmony export */   "updateVersionFile": () => (/* binding */ updateVersionFile),
-/* harmony export */   "verifyExists": () => (/* binding */ verifyExists)
+/* harmony export */   "verifyVersionExists": () => (/* binding */ verifyVersionExists)
 /* harmony export */ });
 const { fetchAllTags } = __nccwpck_require__(1319)
 const semver = __nccwpck_require__(1383)
@@ -32597,19 +32620,16 @@ async function getVersions(octokit, tagPrefix) {
   return versions
 }
 
-function isMainBranch() {
-  return (
-    github.context.ref === 'refs/heads/master' ||
-    github.context.ref === 'refs/heads/main'
-  )
+function isMainBranch(branchName) {
+  return branchName === 'master' || branchName === 'main'
 }
 
-function isPatchBranch() {
-  return github.context.ref.startsWith('refs/heads/patch/')
+function isPatchBranch(branchName) {
+  return branchName.startsWith('patch/')
 }
 
-function incrementVersion(major, allVersions, codeVersion) {
-  if (isMainBranch()) {
+function incrementVersion(major, allVersions, codeVersion, branchName) {
+  if (isMainBranch(branchName)) {
     core.info(`Major: ${major}, Versions: ${JSON.stringify(allVersions)}`)
     core.info(`The branch is master or main, increment minor version`)
     const minor = Math.max(
@@ -32619,7 +32639,7 @@ function incrementVersion(major, allVersions, codeVersion) {
     return new semver.SemVer(`${major}.${minor + 1}.0`)
   }
 
-  if (isPatchBranch()) {
+  if (isPatchBranch(branchName)) {
     core.info(`The branch is patch, increment patch version`)
     const minor = codeVersion.minor
     const build = Math.max(
@@ -32652,26 +32672,22 @@ async function updateVersionFile(
   versionFilePath,
   versionFileSha
 ) {
-  let shaForTag = github.context.sha
-  if (isMainBranch()) {
-    core.info(`Update version file to ${newVersion.major}.${newVersion.minor}`)
-    const newComment = await octokit.rest.repos.createOrUpdateFileContents({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      path: versionFilePath,
-      message: `Update version to ${newVersion.major}.${newVersion.minor}`,
-      content: Buffer.from(`${newVersion.major}.${newVersion.minor}`).toString(
-        'base64'
-      ),
-      sha: versionFileSha ?? undefined
-    })
+  core.info(`Update version file to ${newVersion.major}.${newVersion.minor}`)
+  const newComment = await octokit.rest.repos.createOrUpdateFileContents({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    path: versionFilePath,
+    message: `Update version to ${newVersion.major}.${newVersion.minor}`,
+    content: Buffer.from(`${newVersion.major}.${newVersion.minor}`).toString(
+      'base64'
+    ),
+    sha: versionFileSha ?? undefined
+  })
 
-    shaForTag = newComment.data.commit.sha
-  }
-  return shaForTag
+  return newComment.data.commit.sha
 }
 
-function verifyExists(seekVersion, versions) {
+function verifyVersionExists(seekVersion, versions) {
   core.info(`Verify version ${seekVersion} exists`)
   const version = semver.parse(seekVersion)
   if (!version) {
@@ -32703,7 +32719,9 @@ const {
   getVersions,
   incrementVersion,
   updateVersionFile,
-  verifyExists
+  verifyVersionExists,
+  getBranchName,
+  isMainBranch
 } = __nccwpck_require__(8505)
 
 /**
@@ -32721,9 +32739,10 @@ async function run() {
     core.info(`Tag prefix: ${tagPrefix}`)
     core.info(`Context ref: ${github.context.ref}`)
 
+    const branchName = getBranchName(octokit)
     const versions = await getVersions(octokit, tagPrefix)
 
-    if (seekVersion && verifyExists(seekVersion, versions)) {
+    if (seekVersion && verifyVersionExists(seekVersion, versions)) {
       core.setOutput('version', seekVersion)
       core.setOutput('tag', `${tagPrefix}${seekVersion}`)
       return
@@ -32748,12 +32767,10 @@ async function run() {
     }
 
     const newVersion = incrementVersion(major, versions, fileVersion)
-    const codeSha = await updateVersionFile(
-      octokit,
-      newVersion,
-      versionFilePath,
-      fileSha
-    )
+
+    const codeSha = isMainBranch(branchName)
+      ? github.context.sha
+      : await updateVersionFile(octokit, newVersion, versionFilePath, fileSha)
 
     const newTagName = await createTag(
       octokit,

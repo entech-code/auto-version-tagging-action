@@ -6,7 +6,9 @@ const {
   getVersions,
   incrementVersion,
   updateVersionFile,
-  verifyExists
+  verifyVersionExists,
+  getBranchName,
+  isMainBranch
 } = require('./helpers')
 
 /**
@@ -24,9 +26,10 @@ async function run() {
     core.info(`Tag prefix: ${tagPrefix}`)
     core.info(`Context ref: ${github.context.ref}`)
 
+    const branchName = getBranchName(octokit)
     const versions = await getVersions(octokit, tagPrefix)
 
-    if (seekVersion && verifyExists(seekVersion, versions)) {
+    if (seekVersion && verifyVersionExists(seekVersion, versions)) {
       core.setOutput('version', seekVersion)
       core.setOutput('tag', `${tagPrefix}${seekVersion}`)
       return
@@ -51,12 +54,10 @@ async function run() {
     }
 
     const newVersion = incrementVersion(major, versions, fileVersion)
-    const codeSha = await updateVersionFile(
-      octokit,
-      newVersion,
-      versionFilePath,
-      fileSha
-    )
+
+    const codeSha = isMainBranch(branchName)
+      ? github.context.sha
+      : await updateVersionFile(octokit, newVersion, versionFilePath, fileSha)
 
     const newTagName = await createTag(
       octokit,

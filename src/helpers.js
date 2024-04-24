@@ -20,19 +20,16 @@ export async function getVersions(octokit, tagPrefix) {
   return versions
 }
 
-export function isMainBranch() {
-  return (
-    github.context.ref === 'refs/heads/master' ||
-    github.context.ref === 'refs/heads/main'
-  )
+export function isMainBranch(branchName) {
+  return branchName === 'master' || branchName === 'main'
 }
 
-export function isPatchBranch() {
-  return github.context.ref.startsWith('refs/heads/patch/')
+export function isPatchBranch(branchName) {
+  return branchName.startsWith('patch/')
 }
 
-export function incrementVersion(major, allVersions, codeVersion) {
-  if (isMainBranch()) {
+export function incrementVersion(major, allVersions, codeVersion, branchName) {
+  if (isMainBranch(branchName)) {
     core.info(`Major: ${major}, Versions: ${JSON.stringify(allVersions)}`)
     core.info(`The branch is master or main, increment minor version`)
     const minor = Math.max(
@@ -42,7 +39,7 @@ export function incrementVersion(major, allVersions, codeVersion) {
     return new semver.SemVer(`${major}.${minor + 1}.0`)
   }
 
-  if (isPatchBranch()) {
+  if (isPatchBranch(branchName)) {
     core.info(`The branch is patch, increment patch version`)
     const minor = codeVersion.minor
     const build = Math.max(
@@ -75,26 +72,22 @@ export async function updateVersionFile(
   versionFilePath,
   versionFileSha
 ) {
-  let shaForTag = github.context.sha
-  if (isMainBranch()) {
-    core.info(`Update version file to ${newVersion.major}.${newVersion.minor}`)
-    const newComment = await octokit.rest.repos.createOrUpdateFileContents({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      path: versionFilePath,
-      message: `Update version to ${newVersion.major}.${newVersion.minor}`,
-      content: Buffer.from(`${newVersion.major}.${newVersion.minor}`).toString(
-        'base64'
-      ),
-      sha: versionFileSha ?? undefined
-    })
+  core.info(`Update version file to ${newVersion.major}.${newVersion.minor}`)
+  const newComment = await octokit.rest.repos.createOrUpdateFileContents({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    path: versionFilePath,
+    message: `Update version to ${newVersion.major}.${newVersion.minor}`,
+    content: Buffer.from(`${newVersion.major}.${newVersion.minor}`).toString(
+      'base64'
+    ),
+    sha: versionFileSha ?? undefined
+  })
 
-    shaForTag = newComment.data.commit.sha
-  }
-  return shaForTag
+  return newComment.data.commit.sha
 }
 
-export function verifyExists(seekVersion, versions) {
+export function verifyVersionExists(seekVersion, versions) {
   core.info(`Verify version ${seekVersion} exists`)
   const version = semver.parse(seekVersion)
   if (!version) {
