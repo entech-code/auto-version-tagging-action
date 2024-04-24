@@ -32560,8 +32560,7 @@ async function createTag(octokit, newTagName, shaForTag) {
 }
 
 async function getBranchName(octokit) {
-  let ref = github.context.ref
-  if (ref.startsWith('refs/pull/')) {
+  if (github.context.ref.startsWith('refs/pull/')) {
     core.info(`ref is a pull request. Loading pull request`)
     const pullNumber = github.context.ref.split('/')[2]
     const pull = await octokit.rest.pulls.get({
@@ -32569,18 +32568,18 @@ async function getBranchName(octokit) {
       repo: github.context.repo.repo,
       pull_number: pullNumber
     })
-    ref = pull.data.head.ref
     core.info(JSON.stringify(pull))
-    core.info(`source branch ref in the pull request: ${ref}`)
+    core.info(`Source branch name in the pull request: ${pull.data.head.ref}`)
+    return pull.data.head.ref
   }
 
-  if (!ref.startsWith('refs/heads/')) {
-    throw Error('This action only works on branches')
+  if (github.context.ref.startsWith('refs/heads/')) {
+    const branchName = github.context.ref.substring('refs/heads/'.length)
+    core.info(`Branch name: ${branchName}`)
+    return branchName
   }
 
-  const branchName = ref.substring('refs/heads/'.length)
-  core.info(`Branch name: ${branchName}`)
-  return branchName
+  throw Error('This action only works on branches and pull requests')
 }
 
 
