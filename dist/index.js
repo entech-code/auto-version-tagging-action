@@ -32671,6 +32671,7 @@ async function updateVersionFile(
 }
 
 function verifyExists(seekVersion, versions) {
+  core.info(`Verify version ${seekVersion} exists`)
   const version = semver.parse(seekVersion)
   if (!version) {
     throw Error(`Invalid version: ${seekVersion}`)
