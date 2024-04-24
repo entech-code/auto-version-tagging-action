@@ -64,8 +64,8 @@ async function run() {
     )
 
     const codeSha = isMainBranch(branchName)
-      ? github.context.sha
-      : await updateVersionFile(octokit, newVersion, versionFilePath, fileSha)
+      ? await updateVersionFile(octokit, newVersion, versionFilePath, fileSha)
+      : github.context.sha
 
     const newTagName = await createTag(
       octokit,
