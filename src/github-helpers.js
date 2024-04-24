@@ -81,7 +81,7 @@ export async function createTag(octokit, newTagName, shaForTag) {
 
 export async function getBranchName(octokit) {
   let ref = github.context.ref
-  if (ref.startsWith('refs/pulls/')) {
+  if (ref.startsWith('refs/pull/')) {
     core.info(`ref is a pull request. Loading pull request`)
     const pullNumber = github.context.ref.split('/')[2]
     const pull = await octokit.rest.pulls.get({
@@ -90,6 +90,7 @@ export async function getBranchName(octokit) {
       pull_number: pullNumber
     })
     ref = pull.data.head.ref
+    core.info(JSON.stringify(pull))
     core.info(`source branch ref in the pull request: ${ref}`)
   }
 
