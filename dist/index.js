@@ -32713,13 +32713,16 @@ function verifyVersionExists(seekVersion, versions) {
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const semver = __nccwpck_require__(1383)
-const { fetchFileContentIfExists, createTag } = __nccwpck_require__(1319)
+const {
+  fetchFileContentIfExists,
+  createTag,
+  getBranchName
+} = __nccwpck_require__(1319)
 const {
   getVersions,
   incrementVersion,
   updateVersionFile,
   verifyVersionExists,
-  getBranchName,
   isMainBranch
 } = __nccwpck_require__(8505)
 

@@ -1,13 +1,16 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
 const semver = require('semver')
-const { fetchFileContentIfExists, createTag } = require('./github-helpers')
+const {
+  fetchFileContentIfExists,
+  createTag,
+  getBranchName
+} = require('./github-helpers')
 const {
   getVersions,
   incrementVersion,
   updateVersionFile,
   verifyVersionExists,
-  getBranchName,
   isMainBranch
 } = require('./helpers')
 
