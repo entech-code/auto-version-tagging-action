@@ -35,7 +35,7 @@ async function run() {
     if (seekVersion && verifyVersionExists(seekVersion, versions)) {
       core.setOutput('version', seekVersion)
       core.setOutput('tag', `${tagPrefix}${seekVersion}`)
-      core.notice(`The determined version is: ${seekVersion}`)
+      core.notice(`The found version is: ${seekVersion}`)
       core.notice(`The branch name is: ${branchName}`)
       return
     }
@@ -77,7 +77,7 @@ async function run() {
 
     core.setOutput('version', newVersion.version)
     core.setOutput('tag', newTagName)
-    core.notice(`The determined version is: ${newVersion.version}`)
+    core.notice(`The newly created version is: ${newVersion.version}`)
     core.notice(`The branch name is: ${branchName}`)
   } catch (error) {
     // Fail the workflow run if an error occurs
