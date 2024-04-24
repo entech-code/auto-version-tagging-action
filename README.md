@@ -66,6 +66,9 @@ these steps:
      minor and patch versions.
    - `tagPrefix`: A prefix for tags (e.g., `v` for version tags like `v1.0.0`).
      Defaults to an `v`.
+   - `seekVersion`: Defines the version that should be found in the repository
+     and returned in the format "major.minor.patch". If not set, the script will
+     attempt to find the latest version in the repository and increment it.
 
 4. **Outputs**
 
