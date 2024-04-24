@@ -29,7 +29,7 @@ async function run() {
     core.info(`Tag prefix: ${tagPrefix}`)
     core.info(`Context ref: ${github.context.ref}`)
 
-    const branchName = getBranchName(octokit)
+    const branchName = await getBranchName(octokit)
     const versions = await getVersions(octokit, tagPrefix)
 
     if (seekVersion && verifyVersionExists(seekVersion, versions)) {
