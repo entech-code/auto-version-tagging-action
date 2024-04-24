@@ -92,3 +92,20 @@ export async function updateVersionFile(
   }
   return shaForTag
 }
+
+export function verifyExists(seekVersion, versions) {
+  const version = semver.parse(seekVersion)
+  if (!version) {
+    throw Error(`Invalid version: ${seekVersion}`)
+  }
+
+  const existingVersion = versions.find(
+    x => semver.compare(x, seekVersion) === 0
+  )
+
+  if (existingVersion) {
+    return true
+  }
+
+  throw Error(`Version ${seekVersion} not found`)
+}

@@ -5,7 +5,8 @@ const { fetchFileContentIfExists, createTag } = require('./github-helpers')
 const {
   getVersions,
   incrementVersion,
-  updateVersionFile
+  updateVersionFile,
+  verifyExists
 } = require('./helpers')
 
 /**
@@ -17,10 +18,19 @@ async function run() {
     const myToken = core.getInput('token')
     const major = core.getInput('majorVersion')
     const tagPrefix = core.getInput('tagPrefix')
+    const seekVersion = core.getInput('seekVersion')
 
     const octokit = github.getOctokit(myToken)
     core.info(`Tag prefix: ${tagPrefix}`)
     core.info(`Context ref: ${github.context.ref}`)
+
+    const versions = await getVersions(octokit, tagPrefix)
+
+    if (seekVersion && verifyExists(seekVersion, versions)) {
+      core.setOutput('version', seekVersion)
+      core.setOutput('tag', `${tagPrefix}${seekVersion}`)
+      return
+    }
 
     const versionFilePath = '.version'
 
@@ -40,7 +50,6 @@ async function run() {
       fileVersion = semver.parse(`${content}.0`)
     }
 
-    const versions = await getVersions(octokit, tagPrefix)
     const newVersion = incrementVersion(major, versions, fileVersion)
     const codeSha = await updateVersionFile(
       octokit,

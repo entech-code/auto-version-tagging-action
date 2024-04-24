@@ -32572,7 +32572,8 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony export */   "incrementVersion": () => (/* binding */ incrementVersion),
 /* harmony export */   "isMainBranch": () => (/* binding */ isMainBranch),
 /* harmony export */   "isPatchBranch": () => (/* binding */ isPatchBranch),
-/* harmony export */   "updateVersionFile": () => (/* binding */ updateVersionFile)
+/* harmony export */   "updateVersionFile": () => (/* binding */ updateVersionFile),
+/* harmony export */   "verifyExists": () => (/* binding */ verifyExists)
 /* harmony export */ });
 const { fetchAllTags } = __nccwpck_require__(1319)
 const semver = __nccwpck_require__(1383)
@@ -32669,6 +32670,23 @@ async function updateVersionFile(
   return shaForTag
 }
 
+function verifyExists(seekVersion, versions) {
+  const version = semver.parse(seekVersion)
+  if (!version) {
+    throw Error(`Invalid version: ${seekVersion}`)
+  }
+
+  const existingVersion = versions.find(
+    x => semver.compare(x, seekVersion) === 0
+  )
+
+  if (existingVersion) {
+    return true
+  }
+
+  throw Error(`Version ${seekVersion} not found`)
+}
+
 
 /***/ }),
 
@@ -32682,7 +32700,8 @@ const { fetchFileContentIfExists, createTag } = __nccwpck_require__(1319)
 const {
   getVersions,
   incrementVersion,
-  updateVersionFile
+  updateVersionFile,
+  verifyExists
 } = __nccwpck_require__(8505)
 
 /**
@@ -32694,10 +32713,19 @@ async function run() {
     const myToken = core.getInput('token')
     const major = core.getInput('majorVersion')
     const tagPrefix = core.getInput('tagPrefix')
+    const seekVersion = core.getInput('seekVersion')
 
     const octokit = github.getOctokit(myToken)
     core.info(`Tag prefix: ${tagPrefix}`)
     core.info(`Context ref: ${github.context.ref}`)
+
+    const versions = await getVersions(octokit, tagPrefix)
+
+    if (seekVersion && verifyExists(seekVersion, versions)) {
+      core.setOutput('version', seekVersion)
+      core.setOutput('tag', `${tagPrefix}${seekVersion}`)
+      return
+    }
 
     const versionFilePath = '.version'
 
@@ -32717,7 +32745,6 @@ async function run() {
       fileVersion = semver.parse(`${content}.0`)
     }
 
-    const versions = await getVersions(octokit, tagPrefix)
     const newVersion = incrementVersion(major, versions, fileVersion)
     const codeSha = await updateVersionFile(
       octokit,
