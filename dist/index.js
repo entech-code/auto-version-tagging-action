@@ -32568,7 +32568,6 @@ async function getBranchName(octokit) {
       repo: github.context.repo.repo,
       pull_number: pullNumber
     })
-    core.info(JSON.stringify(pull))
     core.info(`Source branch name in the pull request: ${pull.data.head.ref}`)
     return pull.data.head.ref
   }
