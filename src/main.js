@@ -56,7 +56,12 @@ async function run() {
       fileVersion = semver.parse(`${content}.0`)
     }
 
-    const newVersion = incrementVersion(major, versions, fileVersion)
+    const newVersion = incrementVersion(
+      major,
+      versions,
+      fileVersion,
+      branchName
+    )
 
     const codeSha = isMainBranch(branchName)
       ? github.context.sha
