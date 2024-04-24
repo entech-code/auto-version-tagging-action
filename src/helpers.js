@@ -30,7 +30,6 @@ export function isPatchBranch(branchName) {
 
 export function incrementVersion(major, allVersions, codeVersion, branchName) {
   if (isMainBranch(branchName)) {
-    core.info(`Major: ${major}, Versions: ${JSON.stringify(allVersions)}`)
     core.info(`The branch is master or main, increment minor version`)
     const minor = Math.max(
       -1,

@@ -32517,7 +32517,6 @@ async function fetchFileContentIfExists(octokit, filePath) {
       path: filePath
     })
   } catch (error) {
-    core.info(JSON.stringify(error))
     if (error.status === 404) {
       return { fileContent: null, fileSha: null }
     } else {
@@ -32631,7 +32630,6 @@ function isPatchBranch(branchName) {
 
 function incrementVersion(major, allVersions, codeVersion, branchName) {
   if (isMainBranch(branchName)) {
-    core.info(`Major: ${major}, Versions: ${JSON.stringify(allVersions)}`)
     core.info(`The branch is master or main, increment minor version`)
     const minor = Math.max(
       -1,
